@@ -1,19 +1,21 @@
-package model;
+package id.ac.polinema.intentexercise.model;
 
+import android.graphics.Bitmap;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 
 public class user implements Parcelable {
-    private String name;
+    private String fullname;
     private String email;
     private String password;
     private String confirm;
     private String homepage;
     private String about;
+    private Bitmap profileImage;
 
-    public user(String name, String email, String password, String confirm, String homepage, String about) {
-        this.name = name;
+    public user(String fullname, String email, String password, String confirm, String homepage, String about) {
+        this.fullname = fullname;
         this.email = email;
         this.password = password;
         this.confirm = confirm;
@@ -21,8 +23,8 @@ public class user implements Parcelable {
         this.about = about;
     }
 
-    protected user(Parcel in) {
-        name = in.readString();
+    public user(Parcel in) {
+        fullname = in.readString();
         email = in.readString();
         password = in.readString();
         confirm = in.readString();
@@ -42,12 +44,16 @@ public class user implements Parcelable {
         }
     };
 
+    public Bitmap getProfileImage() {
+        return profileImage;
+    }
+
     public String getName() {
-        return name;
+        return fullname;
     }
 
     public void setName(String name) {
-        this.name = name;
+        this.fullname = name;
     }
 
     public String getEmail() {
@@ -97,7 +103,7 @@ public class user implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(name);
+        dest.writeString(fullname);
         dest.writeString(email);
         dest.writeString(password);
         dest.writeString(confirm);
