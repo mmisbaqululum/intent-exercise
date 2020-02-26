@@ -9,85 +9,66 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
-import com.mobsandgeeks.saripaar.ValidationError;
-import com.mobsandgeeks.saripaar.Validator;
-import com.mobsandgeeks.saripaar.annotation.ConfirmPassword;
-import com.mobsandgeeks.saripaar.annotation.Domain;
-import com.mobsandgeeks.saripaar.annotation.Email;
-import com.mobsandgeeks.saripaar.annotation.NotEmpty;
-import com.mobsandgeeks.saripaar.annotation.Password;
-
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.List;
 
 import id.ac.polinema.intentexercise.model.user;
 
-public class RegisterActivity extends AppCompatActivity  implements Validator.ValidationListener {
+public class RegisterActivity extends AppCompatActivity {
 
-    public static final String USER_KEY = "USER_KEY";
-    Bitmap bitmap ; // store the image in your bitmap
-    private static final int GALLERY_REQUEST_CODE = 1;
     private static final String TAG = RegisterActivity.class.getCanonicalName();
-    @NotEmpty
-    private TextInputEditText fullnameInput;
-    @Email
-    private TextInputEditText emailInput;
-    @Password
-    private TextInputEditText passwordInput;
-    @ConfirmPassword
-    private TextInputEditText confirmPassword;
-    @Domain
-    private TextInputEditText homepageInput;
-    private TextInputEditText aboutInput;
-    private ImageView image_profile;
-    Validator validator;
+    private static final int GALLERY_REQUEST_CODE = 1;
 
+    public static final String FULL_KEY = "fullname";
+    public static final String EMAIL_KEY = "email";
+    public static final String HOMEPAGE_KEY = "homepage";
+    public static final String ABOUT_KEY = "about";
+    public static final String IMAGE_KEY = "image";
+
+    private ImageView avatarImage;
+    private EditText FullText;
+    private EditText EmailText;
+    private EditText PasswordText;
+    private EditText ConfirmText;
+    private EditText HomepageText;
+    private EditText AboutText;
+
+    private Uri imageUri = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
-        fullnameInput = findViewById(R.id.text_fullname);
-        emailInput = findViewById(R.id.text_email);
-        passwordInput = findViewById(R.id.text_password);
-        confirmPassword = findViewById(R.id.text_confirm_password);
-        homepageInput = findViewById(R.id.text_homepage);
-        aboutInput = findViewById(R.id.text_about);
-        image_profile= findViewById(R.id.image_profile);
 
-        validator = new Validator(this);
-        validator.setValidationListener(this);
+        avatarImage = findViewById(R.id.image_profile);
+        FullText = findViewById(R.id.text_fullname);
+        EmailText = findViewById(R.id.text_email);
+        PasswordText = findViewById(R.id.text_password);
+        ConfirmText = findViewById(R.id.text_confirm_password);
+        HomepageText = findViewById(R.id.text_homepage);
+        AboutText = findViewById(R.id.text_about);
     }
 
-    public void handleOk(View view) {
-        validator.validate();
-
-
-    }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
-        if(resultCode == RESULT_CANCELED){
+        if (resultCode == RESULT_CANCELED) {
             return;
         }
 
-        if(requestCode == GALLERY_REQUEST_CODE){
-            if(data!= null){
-                try{
-                    Uri imageUri = data.getData();
-                    bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
-
-                    image_profile.setImageBitmap(bitmap);
-                }catch (IOException e){
+        if (requestCode == GALLERY_REQUEST_CODE) {
+            if (data != null) {
+                try {
+                    imageUri = data.getData();
+                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
+                    avatarImage.setImageBitmap(bitmap);
+                } catch (IOException e) {
                     Toast.makeText(this, "Can't load image", Toast.LENGTH_SHORT).show();
                     Log.e(TAG, e.getMessage());
                 }
@@ -95,40 +76,118 @@ public class RegisterActivity extends AppCompatActivity  implements Validator.Va
         }
     }
 
-    public void handleEditPhoto(View view) {
+    public void handleImage(View view) {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(intent, GALLERY_REQUEST_CODE);
     }
 
-    @Override
-    public void onValidationSucceeded() {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 50, baos);
+    public void submitData(View view) {
+        String fullName = FullText.getText().toString().trim();
+        String email = EmailText.getText().toString().trim();
+        String homepage = HomepageText.getText().toString();
+        String password = PasswordText.getText().toString();
+        String confPass = ConfirmText.getText().toString();
+        String about = AboutText.getText().toString();
 
-        Intent intent = new Intent(this, ProfileActivity.class );
-        intent.putExtra(USER_KEY,new user(fullnameInput.getText().toString(),
-                emailInput.getText().toString(),
-                passwordInput.getText().toString(),
-                homepageInput.getText().toString(),
-                aboutInput.getText().toString()));
-        intent.putExtra("profileImage",baos.toByteArray());
-        startActivity(intent);
 
-    }
-
-    @Override
-    public void onValidationFailed(List<ValidationError> errors) {
-        for (ValidationError error : errors) {
-            View view = error.getView();
-            String message = error.getCollatedErrorMessage(this);
-
-            // Display error messages ;)
-            if (view instanceof EditText) {
-                ((EditText) view).setError(message);
-            } else {
-                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        //TODO : MUST BE ABLE TO SHOW ALL ERROR
+        int countError = 5;
+        Intent intent = new Intent(this, ProfileActivity.class);
+        if(checkFullname(fullName)){
+            intent.putExtra(FULL_KEY, fullName);
+            countError--;
+        }
+        if(checkEmail(email)){
+            intent.putExtra(EMAIL_KEY, email);
+            countError--;
+        }
+        if(checkPassword(password, confPass)){
+            countError--;
+        }
+        if(checkHomepage(homepage)){
+            intent.putExtra(HOMEPAGE_KEY, homepage);
+            countError--;
+        }
+        if(checkAbout(about)){
+            intent.putExtra(ABOUT_KEY, about);
+            countError--;
+        }
+        if(countError == 0){
+            if(imageUri != null){
+                intent.putExtra(IMAGE_KEY, imageUri.toString());
+                try{
+                    startActivity(intent);
+                }catch(Exception ex){
+                    intent.putExtra(IMAGE_KEY, "");
+                    Toast.makeText(this, "Your image are too big", Toast.LENGTH_SHORT).show();
+                    startActivity(intent);
+                }
+            }else{
+                Toast.makeText(this, "Please add your image", Toast.LENGTH_SHORT).show();
+                handleImage(view);
             }
         }
+    }
 
+    private boolean checkAbout(String about) {
+        if(about.isEmpty()){
+            AboutText.setError("About masih kosong");
+            return false;
+        }else{
+            return true;
+        }
+    }
+
+    private boolean checkPassword(String password, String confPass) {
+        if(password.isEmpty() && confPass.isEmpty()){
+            PasswordText.setError("Password masih kosong");
+            ConfirmText.setError("Confirmation masih kosong");
+            return false;
+        } else if(password.isEmpty()){
+            PasswordText.setError("Password masih kosong");
+            return false;
+        }else if(confPass.isEmpty()){
+            ConfirmText.setError("Confirmation masih kosong");
+            return false;
+        }else if(password.equals(confPass)) {
+            return true;
+        }else{
+            PasswordText.setError("Password doesn't match");
+            ConfirmText.setError("Password doesn't match");
+            return false;
+        }
+    }
+
+    private boolean checkFullname(String fullname){
+        if(fullname.isEmpty()){
+            FullText.setError("Masukkan fullname Anda");
+            return false;
+        }else{
+            return true;
+        }
+    }
+
+    private boolean checkEmail(String email){
+        if(email.isEmpty()){
+            EmailText.setError("Masukkan Email Anda!");
+            return false;
+        }else if(!Patterns.EMAIL_ADDRESS.matcher(email).matches()){
+            EmailText.setError("Cek Email Anda!");
+            return false;
+        }else{
+            return true;
+        }
+    }
+
+    private boolean checkHomepage(String homepage){
+        if(homepage.isEmpty()){
+            HomepageText.setError("Masukkan Homepage yang Anda inginkan!");
+            return false;
+        }else if(!Patterns.WEB_URL.matcher(homepage).matches()){
+            HomepageText.setError("Cek homepage Anda!");
+            return false;
+        }else{
+            return true;
+        }
     }
 }
